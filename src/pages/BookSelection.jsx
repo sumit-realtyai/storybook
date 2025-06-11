@@ -3,24 +3,6 @@ import {useEffect} from 'react';
 import axios from 'axios';
 function BookSelection() {
 
-useEffect(() => {
-  const createUser = async () => {
-    try {
-        const response =await axios.post('http://localhost:3000/api/photo/add_photo_to_queue', {
-    file_name: "realty_ai_logo.jpg",
-file_url: 
-"https://kids-storybooks.s3.ap-south-1.amazonaws.com/original_images/1747054504416_realty_ai_logo.jpg",
-request_id
-: 
-"req_t4y68jo0r"
-});
-        console.log('User created:', response.data);
-    } catch (error) {
-      console.error('Error creating user:', error);
-    }
-  };
-  createUser();
-}, []);
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-b from-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
