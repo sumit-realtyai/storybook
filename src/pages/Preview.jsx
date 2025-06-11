@@ -32,7 +32,7 @@ function Preview() {
 
   const fetchPageData = useCallback(async (pageNumber) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/photo/get_generation_details`, {
+      const response = await axios.get(`https://fd59-2405-201-300c-ae0-4dd8-20e1-d96-a11c.ngrok-free.app/api/photo/get_generation_details`, {
         params: {
           req_id: request_id,
           book_id: 1,
