@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CircularProgressbar } from 'react-circular-progressbar';
 import { useSwipeable } from 'react-swipeable';
@@ -113,7 +113,7 @@ function Preview() {
     };
   }, [currentPage, fetchPageData]);
 
-  const handleImageNavigation = (pageIndex, direction) => {
+  const handleImageNavigation = useCallback((pageIndex, direction) => {
     const page = pageData[pageIndex];
     if (!page || !page.image_urls) return;
 
@@ -131,16 +131,19 @@ function Preview() {
       ...prev,
       [pageIndex]: newIndex
     }));
-  };
+  }, [pageData, currentImageIndexes]);
 
-  const createSwipeHandlers = (pageIndex) => {
-    return useSwipeable({
-      onSwipedLeft: () => handleImageNavigation(pageIndex, 'next'),
-      onSwipedRight: () => handleImageNavigation(pageIndex, 'prev'),
-      trackMouse: true,
-      preventScrollOnSwipe: true,
-    });
-  };
+  // Create swipe handlers for all pages at once using useMemo
+  const swipeHandlers = useMemo(() => {
+    return pageData.map((_, pageIndex) => 
+      useSwipeable({
+        onSwipedLeft: () => handleImageNavigation(pageIndex, 'next'),
+        onSwipedRight: () => handleImageNavigation(pageIndex, 'prev'),
+        trackMouse: true,
+        preventScrollOnSwipe: true,
+      })
+    );
+  }, [pageData.length, handleImageNavigation]);
 
   if (isLoading && currentPage <= 4 && pageData.length === 0) {
     return (
@@ -197,7 +200,7 @@ function Preview() {
             
             const images = page.image_urls || [page.image_url]; // Fallback to single image_url if image_urls doesn't exist
             const currentImageIndex = currentImageIndexes[pageIndex] || 0;
-            const swipeHandlers = createSwipeHandlers(pageIndex);
+            const pageSwipeHandlers = swipeHandlers[pageIndex] || {};
 
             return (
               <div 
@@ -214,7 +217,7 @@ function Preview() {
                 </div>
                 
                 <div className="relative w-full rounded-lg overflow-hidden group">
-                  <div {...swipeHandlers} className="relative">
+                  <div {...pageSwipeHandlers} className="relative">
                     <img 
                       src={images[currentImageIndex]}
                       alt={`Page ${pageIndex + 1} - Image ${currentImageIndex + 1}`}
