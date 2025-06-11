@@ -246,7 +246,7 @@ function Preview() {
                       <>
                         <button
                           onClick={() => handleImageNavigation(pageIndex, 'prev')}
-                          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-opacity-70"
+                          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full transition-opacity duration-300 hover:bg-opacity-70"
                           aria-label="Previous image"
                         >
                           <ChevronLeftIcon className="h-5 w-5" />
@@ -254,7 +254,7 @@ function Preview() {
                         
                         <button
                           onClick={() => handleImageNavigation(pageIndex, 'next')}
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-opacity-70"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full transition-opacity duration-300 hover:bg-opacity-70"
                           aria-label="Next image"
                         >
                           <ChevronRightIcon className="h-5 w-5" />
