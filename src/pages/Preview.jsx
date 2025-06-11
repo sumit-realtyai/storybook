@@ -5,6 +5,7 @@ import { useSwipeable } from 'react-swipeable';
 import 'react-circular-progressbar/dist/styles.css';
 import useChildStore from '../store/childStore';
 import axios from 'axios';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 function Preview() {
   const [searchParams] = useSearchParams();
@@ -16,6 +17,7 @@ function Preview() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [hasNextPage, setHasNextPage] = useState(true);
   const [showSaveButton, setShowSaveButton] = useState(false);
+  const [currentImageIndexes, setCurrentImageIndexes] = useState({});
   const childName = useChildStore((state) => state.childName);
 
   useEffect(() => {
@@ -30,15 +32,12 @@ function Preview() {
 
   const fetchPageData = useCallback(async (pageNumber) => {
     try {
-      // http://localhost:5000/api/photo/get_generation_details
-      // https://is510t1jgd.execute-api.ap-south-1.amazonaws.com/api/photo/get_generation_details
       const response = await axios.get(`http://localhost:5000/api/photo/get_generation_details`, {
         params: {
           req_id: request_id,
           book_id: 1,
           page_number: pageNumber
         },
-        
       });
       const data = response.data;
       return { ...data, pageNumber };
@@ -78,6 +77,12 @@ function Preview() {
           return newPages;
         });
         
+        // Initialize current image index for this page
+        setCurrentImageIndexes(prev => ({
+          ...prev,
+          [pageResult.pageNumber - 1]: 0
+        }));
+        
         if (progressInterval) {
           clearInterval(progressInterval);
         }
@@ -105,7 +110,34 @@ function Preview() {
     };
   }, [currentPage, fetchPageData]);
 
-  
+  const handleImageNavigation = (pageIndex, direction) => {
+    const page = pageData[pageIndex];
+    if (!page || !page.image_urls) return;
+
+    const currentIndex = currentImageIndexes[pageIndex] || 0;
+    const totalImages = page.image_urls.length;
+    
+    let newIndex;
+    if (direction === 'next') {
+      newIndex = (currentIndex + 1) % totalImages;
+    } else {
+      newIndex = currentIndex === 0 ? totalImages - 1 : currentIndex - 1;
+    }
+
+    setCurrentImageIndexes(prev => ({
+      ...prev,
+      [pageIndex]: newIndex
+    }));
+  };
+
+  const createSwipeHandlers = (pageIndex) => {
+    return useSwipeable({
+      onSwipedLeft: () => handleImageNavigation(pageIndex, 'next'),
+      onSwipedRight: () => handleImageNavigation(pageIndex, 'prev'),
+      trackMouse: true,
+      preventScrollOnSwipe: true,
+    });
+  };
 
   if (isLoading && currentPage <= 4 && pageData.length === 0) {
     return (
@@ -154,35 +186,96 @@ function Preview() {
         <div className="space-y-12">
           <div className="text-center space-y-2 font-medium text-gray-600">
             <p className="text-2xl">↓ Pages get shown one below the other</p>
-            <p className="text-2xl">🔄 Swipe left for next page</p>
+            <p className="text-2xl">🔄 Swipe left/right to see different images</p>
           </div>
 
-          {pageData.map((page, index) => (
-            page && (
+          {pageData.map((page, pageIndex) => {
+            if (!page) return null;
+            
+            const images = page.image_urls || [page.image_url]; // Fallback to single image_url if image_urls doesn't exist
+            const currentImageIndex = currentImageIndexes[pageIndex] || 0;
+            const swipeHandlers = createSwipeHandlers(pageIndex);
+
+            return (
               <div 
-                key={index}
-                
+                key={pageIndex}
                 className="bg-white rounded-xl shadow-lg p-4 sm:p-6 transform transition-all duration-500 ease-in-out"
               >
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-blue-900">Page {index + 1}</h2>
+                  <h2 className="text-xl font-bold text-blue-900">Page {pageIndex + 1}</h2>
+                  {images.length > 1 && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span>{currentImageIndex + 1} of {images.length}</span>
+                    </div>
+                  )}
                 </div>
                 
-                <div className="relative w-full rounded-lg overflow-hidden">
-                  <img 
-                    src={page.image_url}
-                    alt={`Page ${index + 1}`}
-                    className="w-full aspect-[4/3] object-cover"
-                    loading="lazy"
-                  />
+                <div className="relative w-full rounded-lg overflow-hidden group">
+                  <div {...swipeHandlers} className="relative">
+                    <img 
+                      src={images[currentImageIndex]}
+                      alt={`Page ${pageIndex + 1} - Image ${currentImageIndex + 1}`}
+                      className="w-full aspect-[4/3] object-cover transition-opacity duration-300"
+                      loading="lazy"
+                    />
+                    
+                    {/* Navigation arrows - only show if there are multiple images */}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => handleImageNavigation(pageIndex, 'prev')}
+                          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-opacity-70"
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeftIcon className="h-5 w-5" />
+                        </button>
+                        
+                        <button
+                          onClick={() => handleImageNavigation(pageIndex, 'next')}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:bg-opacity-70"
+                          aria-label="Next image"
+                        >
+                          <ChevronRightIcon className="h-5 w-5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Image indicators - only show if there are multiple images */}
+                  {images.length > 1 && (
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+                      {images.map((_, imageIndex) => (
+                        <button
+                          key={imageIndex}
+                          onClick={() => setCurrentImageIndexes(prev => ({
+                            ...prev,
+                            [pageIndex]: imageIndex
+                          }))}
+                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                            imageIndex === currentImageIndex 
+                              ? 'bg-white scale-125' 
+                              : 'bg-white bg-opacity-50 hover:bg-opacity-75'
+                          }`}
+                          aria-label={`Go to image ${imageIndex + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <p className="mt-6 text-gray-800 text-lg font-medium text-center px-4">
-                  {page.description || `Page ${index + 1} content`}
+                  {page.description || `Page ${pageIndex + 1} content`}
                 </p>
+
+                {/* Swipe instruction for mobile */}
+                {images.length > 1 && (
+                  <p className="mt-2 text-center text-sm text-gray-500 md:hidden">
+                    Swipe left or right to see more images
+                  </p>
+                )}
               </div>
-            )
-          ))}
+            );
+          })}
 
           {isLoading && currentPage > 4 && (
             <div className="text-center py-8">
