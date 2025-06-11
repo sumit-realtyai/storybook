@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CircularProgressbar } from 'react-circular-progressbar';
-import { useSwipeable } from 'react-swipeable';
 import 'react-circular-progressbar/dist/styles.css';
 import useChildStore from '../store/childStore';
 import axios from 'axios';
@@ -133,17 +132,31 @@ function Preview() {
     }));
   }, [pageData, currentImageIndexes]);
 
-  // Create swipe handlers for all pages at once using useMemo
-  const swipeHandlers = useMemo(() => {
-    return pageData.map((_, pageIndex) => 
-      useSwipeable({
-        onSwipedLeft: () => handleImageNavigation(pageIndex, 'next'),
-        onSwipedRight: () => handleImageNavigation(pageIndex, 'prev'),
-        trackMouse: true,
-        preventScrollOnSwipe: true,
-      })
-    );
-  }, [pageData.length, handleImageNavigation]);
+  // Handle touch events for swipe functionality
+  const handleTouchStart = useCallback((e, pageIndex) => {
+    const touch = e.touches[0];
+    e.currentTarget.dataset.startX = touch.clientX;
+    e.currentTarget.dataset.startY = touch.clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e, pageIndex) => {
+    const startX = parseFloat(e.currentTarget.dataset.startX);
+    const startY = parseFloat(e.currentTarget.dataset.startY);
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    
+    const deltaX = endX - startX;
+    const deltaY = endY - startY;
+    
+    // Only trigger swipe if horizontal movement is greater than vertical
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      if (deltaX > 0) {
+        handleImageNavigation(pageIndex, 'prev');
+      } else {
+        handleImageNavigation(pageIndex, 'next');
+      }
+    }
+  }, [handleImageNavigation]);
 
   if (isLoading && currentPage <= 4 && pageData.length === 0) {
     return (
@@ -200,7 +213,6 @@ function Preview() {
             
             const images = page.image_urls || [page.image_url]; // Fallback to single image_url if image_urls doesn't exist
             const currentImageIndex = currentImageIndexes[pageIndex] || 0;
-            const pageSwipeHandlers = swipeHandlers[pageIndex] || {};
 
             return (
               <div 
@@ -217,7 +229,11 @@ function Preview() {
                 </div>
                 
                 <div className="relative w-full rounded-lg overflow-hidden group">
-                  <div {...pageSwipeHandlers} className="relative">
+                  <div 
+                    className="relative"
+                    onTouchStart={(e) => handleTouchStart(e, pageIndex)}
+                    onTouchEnd={(e) => handleTouchEnd(e, pageIndex)}
+                  >
                     <img 
                       src={images[currentImageIndex]}
                       alt={`Page ${pageIndex + 1} - Image ${currentImageIndex + 1}`}
