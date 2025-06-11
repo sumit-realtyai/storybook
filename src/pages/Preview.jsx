@@ -238,7 +238,7 @@ function Preview() {
                       src={images[currentImageIndex]}
                       alt={`Page ${pageIndex + 1} - Image ${currentImageIndex + 1}`}
                       className="w-full aspect-[4/3] object-cover transition-opacity duration-300"
-                      loading="lazy"
+                      
                     />
                     
                     {/* Navigation arrows - only show if there are multiple images */}
