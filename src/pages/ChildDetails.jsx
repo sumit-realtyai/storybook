@@ -1,4 +1,4 @@
-import { useState , } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useChildStore from '../store/childStore';
 import { UserCircleIcon, CalendarIcon, CakeIcon } from '@heroicons/react/24/outline';
@@ -15,16 +15,22 @@ function ChildDetails() {
 
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-
-  // Get specific query param values
   const book_id = queryParams.get('book_id');
-  
-  
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setChildName(formData.name);
-    navigate('/upload');
+    
+    // Create query params with all child details and book_id
+    const uploadParams = new URLSearchParams({
+      book_id: book_id,
+      name: formData.name,
+      gender: formData.gender,
+      age: formData.age,
+      birthMonth: formData.birthMonth
+    });
+    
+    navigate(`/upload?${uploadParams.toString()}`);
   };
 
   return (

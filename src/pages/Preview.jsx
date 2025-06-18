@@ -8,7 +8,15 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 function Preview() {
   const [searchParams] = useSearchParams();
+  
+  // Get all query parameters
   const request_id = searchParams.get('request_id');
+  const book_id = searchParams.get('book_id');
+  const childName = searchParams.get('name') || useChildStore((state) => state.childName);
+  const gender = searchParams.get('gender');
+  const age = searchParams.get('age');
+  const birthMonth = searchParams.get('birthMonth');
+  
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,7 +25,6 @@ function Preview() {
   const [hasNextPage, setHasNextPage] = useState(true);
   const [showSaveButton, setShowSaveButton] = useState(false);
   const [currentImageIndexes, setCurrentImageIndexes] = useState({});
-  const childName = useChildStore((state) => state.childName);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,55 +36,52 @@ function Preview() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const pollUntilDone = async (req_id, job_id, page_number, book_id, maxRetries = 15, interval = 30000) => {
+    let retries = 0;
+    console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
+    
+    const poll = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/photo/check_generation_status`, {
+          headers: {
+            "ngrok-skip-browser-warning": "true"
+          },
+          params: { req_id, job_id, page_number, book_id }
+        });
 
-  const pollUntilDone = async (req_id, job_id, page_number,book_id,maxRetries = 15,  interval = 30000,  ) => {
-  let retries = 0;
-console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
-  const poll = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5000/api/photo/check_generation_status`, {
-        headers: {
-          "ngrok-skip-browser-warning": "true"
-        },
-        params: { req_id, job_id, page_number, book_id }
-      });
+        const data = res.data;
+        console.log("Polling response:", data);
+        if (data.status === 'completed' && data.image_urls) {
+          return data;
+        }
 
-      const data = res.data;
-      console.log("Polling response:", data);
-      if (data.status === 'completed' && data.image_urls) {
-        return data;
+        if(data.status == "failed") {
+          throw new Error("Image generation failed");
+        }
+
+        if (retries < maxRetries) {
+          retries++;
+          await new Promise(resolve => setTimeout(resolve, interval));
+          return await poll();
+        } else {
+          throw new Error("Polling timed out");
+        }
+
+      } catch (error) {
+        console.error("Polling error:", error);
+        return { error: true };
       }
+    };
 
-      if(data.status == "failed") {
-        throw new Error("Image generation failed");
-      }
-
-      
-
-      if (retries < maxRetries) {
-        retries++;
-        await new Promise(resolve => setTimeout(resolve, interval));
-        return await poll();
-      } else {
-        throw new Error("Polling timed out");
-      }
-
-    } catch (error) {
-      console.error("Polling error:", error);
-      return { error: true };
-    }
+    return await poll();
   };
 
-  return await poll();
-};
-
-
-  const fetchPageData = useCallback(async (pageNumber,book_id) => {
+  const fetchPageData = useCallback(async (pageNumber, book_id) => {
     try {
       const response = await axios.get(`http://localhost:5000/api/photo/get_generation_details`, {
         headers: {
-    "ngrok-skip-browser-warning": "true"
-     },
+          "ngrok-skip-browser-warning": "true"
+        },
         params: {
           req_id: request_id,
           book_id,
@@ -85,14 +89,14 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
         },
       });
 
-       const { job_id } = response.data;
+      const { job_id } = response.data;
       console.log('Job ID:', job_id);
-    if (!job_id) {
-      throw new Error("No job_id found in response");
-    }
-    
-    const result = await pollUntilDone(request_id, job_id, pageNumber, book_id);
-    return { ...result, pageNumber }; 
+      if (!job_id) {
+        throw new Error("No job_id found in response");
+      }
+      
+      const result = await pollUntilDone(request_id, job_id, pageNumber, book_id);
+      return { ...result, pageNumber }; 
 
     } catch (error) {
       console.error('Error fetching page data:', error);
@@ -100,31 +104,14 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
     }
   }, [request_id]);
 
-
-
   useEffect(() => {
     let progressInterval;
     let isMounted = true;
 
     const loadPage = async () => {
-      // if (currentPage <= 1) {
-      //   progressInterval = setInterval(() => {
-      //     setProgress(prev => {
-      //       if (prev >= 100) {
-      //         clearInterval(progressInterval);
-      //         return 100;
-      //       }
-      //       return prev + 2;
-      //     });
-      //   }, 100);
-      // } else {
-      //   setLoadingMessage(`Loading page ${currentPage}`);
-      // }
-
       setLoadingMessage(`Loading page ${currentPage}`);
 
-      const book_id = '6818cab3bfb946189a94960c'; // Replace with your actual book_id
-      const pageResult = await fetchPageData(currentPage,book_id);
+      const pageResult = await fetchPageData(currentPage, book_id);
       
       if (!isMounted) return;
 
@@ -138,7 +125,7 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
         // Initialize current image index for this page
         setCurrentImageIndexes(prev => ({
           ...prev,
-          [pageResult.pageNumber - 1]: pageResult.image_idx
+          [pageResult.pageNumber - 1]: pageResult.image_idx || 0
         }));
         
         if (progressInterval) {
@@ -151,9 +138,6 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
         if (pageResult.next) {
           setCurrentPage(prev => prev + 1);
           setIsLoading(true);
-          // if (currentPage > 1) {
-          //   setLoadingMessage(`Loading page ${currentPage + 1}`);
-          // }
         }
       }
     };
@@ -166,7 +150,7 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
         clearInterval(progressInterval);
       }
     };
-  }, [currentPage, fetchPageData]);
+  }, [currentPage, fetchPageData, book_id]);
 
   const handleImageNavigation = useCallback((pageIndex, direction) => {
     const page = pageData[pageIndex];
@@ -237,6 +221,33 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
     );
   }
 
+  const handleSavePreview = () => {
+    // Create query params with all details for save preview page
+    const saveParams = new URLSearchParams({
+      request_id: request_id,
+      book_id: book_id,
+      name: childName,
+      gender: gender || '',
+      age: age || '',
+      birthMonth: birthMonth || ''
+    });
+    
+    return `/save-preview?${saveParams.toString()}`;
+  };
+
+  const handleUploadAnother = () => {
+    // Create query params to go back to upload with all details
+    const uploadParams = new URLSearchParams({
+      book_id: book_id,
+      name: childName,
+      gender: gender || '',
+      age: age || '',
+      birthMonth: birthMonth || ''
+    });
+    
+    return `/upload?${uploadParams.toString()}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="sticky top-0 bg-gray-50 z-50 shadow-md">
@@ -244,7 +255,7 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">Want to try a different photo?</p>
             <Link 
-              to="/upload" 
+              to={handleUploadAnother()}
               className="bg-secondary text-white px-6 py-2 rounded-full text-sm hover:bg-blue-600 transition duration-300"
             >
               Upload Another Photo
@@ -267,7 +278,7 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
           {pageData.map((page, pageIndex) => {
             if (!page) return null;
             
-            const images = page.image_urls || []; // Fallback to single image_url if image_urls doesn't exist
+            const images = page.image_urls || [];
             const currentImageIndex = currentImageIndexes[pageIndex] || 0;
 
             return (
@@ -294,7 +305,6 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
                       src={images[currentImageIndex]}
                       alt={`Page ${pageIndex + 1} - Image ${currentImageIndex + 1}`}
                       className="w-full aspect-[4/3] object-cover transition-opacity duration-300"
-                      
                     />
                     
                     {/* Navigation arrows - only show if there are multiple images */}
@@ -369,7 +379,7 @@ console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow-lg transform transition-all duration-300 z-50">
           <div className="max-w-2xl mx-auto">
             <Link
-              to="/save-preview"
+              to={handleSavePreview()}
               className="block w-full bg-secondary text-white text-center py-4 rounded-full text-xl font-semibold hover:bg-blue-600 transition duration-300"
             >
               Save Preview & Show Price

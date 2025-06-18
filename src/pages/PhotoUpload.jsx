@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import useChildStore from '../store/childStore';
 import { PhotoIcon, CheckCircleIcon, XCircleIcon, BookOpenIcon } from '@heroicons/react/24/outline';
@@ -7,10 +7,21 @@ import axios from 'axios';
 
 function PhotoUpload() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  
+  // Get all query parameters
+  const book_id = queryParams.get('book_id');
+  const childName = queryParams.get('name') || useChildStore((state) => state.childName);
+  const gender = queryParams.get('gender');
+  const age = queryParams.get('age');
+  const birthMonth = queryParams.get('birthMonth');
+  
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadStatus, setUploadStatus] = useState([]);
-  const childName = useChildStore((state) => state.childName);
- const [req_id, setRequestId] = useState(null);
+  const [req_id, setRequestId] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
   const handleImageUpload = async (file, request_id) => {
     const formData = new FormData();
     formData.append('image', file);
@@ -38,18 +49,24 @@ function PhotoUpload() {
 
   const onDrop = useCallback(async (acceptedFiles) => {
     setUploadedFiles(acceptedFiles);
+    setIsUploading(true);
+    setUploadStatus([]); // Reset status
 
     // Generate a dummy request ID (in production this should come from your backend)
     const request_id = `req_${Math.random().toString(36).substr(2, 9)}`;
     setRequestId(request_id);
+    
     // Process each file individually
     const statusResults = [];
-    for (const file of acceptedFiles) {
+    for (let i = 0; i < acceptedFiles.length; i++) {
+      const file = acceptedFiles[i];
       const result = await handleImageUpload(file, request_id);
       statusResults.push(result);
       // Update status immediately after each file is processed
       setUploadStatus([...statusResults]);
     }
+    
+    setIsUploading(false);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -62,11 +79,26 @@ function PhotoUpload() {
   });
 
   const handleShowPreview = () => {
-    if (uploadStatus.every(status => status.success)) {
-      // ### will update this to use the actual request_id from your backend
-      navigate(`/preview?request_id=${req_id}`);
+    if (uploadStatus.every(status => status.success) && req_id) {
+      // Create query params with all details for preview page
+      const previewParams = new URLSearchParams({
+        request_id: req_id,
+        book_id: book_id,
+        name: childName,
+        gender: gender || '',
+        age: age || '',
+        birthMonth: birthMonth || ''
+      });
+      
+      navigate(`/preview?${previewParams.toString()}`);
     }
   };
+
+  // Check if all photos are successfully uploaded
+  const allPhotosUploaded = uploadedFiles.length >= 2 && 
+                           uploadStatus.length === uploadedFiles.length && 
+                           uploadStatus.every(status => status.success) &&
+                           !isUploading;
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6">
@@ -121,6 +153,9 @@ function PhotoUpload() {
               {uploadedFiles.map((file, index) => (
                 <div key={index} className={`bg-gray-100 px-3 py-1 rounded-full text-sm flex items-center gap-2`}>
                   <span>{file.name}</span>
+                  {isUploading && index >= uploadStatus.length && (
+                    <span className="text-blue-500">⏳</span>
+                  )}
                   {uploadStatus[index] && (
                     <span className={uploadStatus[index].success ? "text-green-500" : "text-red-500"}>
                       {uploadStatus[index].success ? "✓" : "✗"}
@@ -129,19 +164,22 @@ function PhotoUpload() {
                 </div>
               ))}
             </div>
+            {isUploading && (
+              <p className="text-sm text-blue-600 mt-2">Uploading photos...</p>
+            )}
           </div>
         )}
 
         <button
           onClick={handleShowPreview}
-          disabled={uploadedFiles.length < 2 || !uploadStatus.every(status => status.success)}
+          disabled={!allPhotosUploaded}
           className={`w-full py-3 px-6 rounded-full text-lg font-semibold transition duration-300 ${
-            uploadedFiles.length < 2 || !uploadStatus.every(status => status.success)
+            !allPhotosUploaded
               ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
               : 'bg-secondary text-white hover:bg-blue-600'
           }`}
         >
-          Show Book Preview
+          {isUploading ? 'Uploading Photos...' : 'Show Book Preview'}
         </button>
 
         <div className="mt-8 text-center">
