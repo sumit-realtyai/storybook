@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function BookCard({ book }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFlipping, setIsFlipping] = useState(false);
   
   const images = [book.animatedImage, book.secondaryImage];
-
+  const navigate = useNavigate();
   useEffect(() => {
     const timer = setInterval(() => {
       setIsFlipping(true);
@@ -18,6 +18,10 @@ function BookCard({ book }) {
 
     return () => clearInterval(timer);
   }, []);
+
+  const openForm = (bookId) => {
+      navigate(`/details?book_id=${bookId}`);
+  }
 
   return (
     <div className="flex flex-col md:flex-row overflow-hidden rounded-3xl shadow-2xl bg-gradient-to-r from-blue-600 to-blue-800">
@@ -41,14 +45,15 @@ function BookCard({ book }) {
         </div>
         <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 md:mb-6">{book.title}</h2>
         <p className="text-blue-100 mb-6 md:mb-10 text-base md:text-xl leading-relaxed">{book.description}</p>
-        <Link
-          to="/details"
+        <button
+          // to="/details"
+          onClick={() => openForm(book.id)}
           className="bg-white text-blue-600 text-center py-3 md:py-5 px-6 md:px-10 rounded-full text-lg md:text-2xl font-bold 
             transform transition-all duration-300 hover:scale-105 hover:shadow-lg
             hover:bg-yellow-400 hover:text-blue-900"
         >
           Personalize This Book
-        </Link>
+        </button>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState , } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useChildStore from '../store/childStore';
 import { UserCircleIcon, CalendarIcon, CakeIcon } from '@heroicons/react/24/outline';
 
@@ -12,6 +12,14 @@ function ChildDetails() {
     age: '',
     birthMonth: ''
   });
+
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+
+  // Get specific query param values
+  const book_id = queryParams.get('book_id');
+  
+  
 
   const handleSubmit = (e) => {
     e.preventDefault();

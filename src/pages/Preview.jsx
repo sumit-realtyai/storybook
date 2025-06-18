@@ -29,46 +29,102 @@ function Preview() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const fetchPageData = useCallback(async (pageNumber) => {
+
+  const pollUntilDone = async (req_id, job_id, page_number,book_id,maxRetries = 15,  interval = 30000,  ) => {
+  let retries = 0;
+console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
+  const poll = async () => {
     try {
-      const response = await axios.get(`https://fd59-2405-201-300c-ae0-4dd8-20e1-d96-a11c.ngrok-free.app/api/photo/get_generation_details`, {
+      const res = await axios.get(`http://localhost:5000/api/photo/check_generation_status`, {
+        headers: {
+          "ngrok-skip-browser-warning": "true"
+        },
+        params: { req_id, job_id, page_number, book_id }
+      });
+
+      const data = res.data;
+      console.log("Polling response:", data);
+      if (data.status === 'completed' && data.image_urls) {
+        return data;
+      }
+
+      if(data.status == "failed") {
+        throw new Error("Image generation failed");
+      }
+
+      
+
+      if (retries < maxRetries) {
+        retries++;
+        await new Promise(resolve => setTimeout(resolve, interval));
+        return await poll();
+      } else {
+        throw new Error("Polling timed out");
+      }
+
+    } catch (error) {
+      console.error("Polling error:", error);
+      return { error: true };
+    }
+  };
+
+  return await poll();
+};
+
+
+  const fetchPageData = useCallback(async (pageNumber,book_id) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/photo/get_generation_details`, {
         headers: {
     "ngrok-skip-browser-warning": "true"
      },
         params: {
           req_id: request_id,
-          book_id: 1,
+          book_id,
           page_number: pageNumber
         },
       });
-      const data = response.data;
-      return { ...data, pageNumber };
+
+       const { job_id } = response.data;
+      console.log('Job ID:', job_id);
+    if (!job_id) {
+      throw new Error("No job_id found in response");
+    }
+    
+    const result = await pollUntilDone(request_id, job_id, pageNumber, book_id);
+    return { ...result, pageNumber }; 
+
     } catch (error) {
       console.error('Error fetching page data:', error);
       return null;
     }
   }, [request_id]);
 
+
+
   useEffect(() => {
     let progressInterval;
     let isMounted = true;
 
     const loadPage = async () => {
-      if (currentPage <= 4) {
-        progressInterval = setInterval(() => {
-          setProgress(prev => {
-            if (prev >= 100) {
-              clearInterval(progressInterval);
-              return 100;
-            }
-            return prev + 2;
-          });
-        }, 100);
-      } else {
-        setLoadingMessage(`Loading page ${currentPage}`);
-      }
+      // if (currentPage <= 1) {
+      //   progressInterval = setInterval(() => {
+      //     setProgress(prev => {
+      //       if (prev >= 100) {
+      //         clearInterval(progressInterval);
+      //         return 100;
+      //       }
+      //       return prev + 2;
+      //     });
+      //   }, 100);
+      // } else {
+      //   setLoadingMessage(`Loading page ${currentPage}`);
+      // }
 
-      const pageResult = await fetchPageData(currentPage);
+      setLoadingMessage(`Loading page ${currentPage}`);
+
+      const book_id = '6818cab3bfb946189a94960c'; // Replace with your actual book_id
+      const pageResult = await fetchPageData(currentPage,book_id);
       
       if (!isMounted) return;
 
@@ -82,7 +138,7 @@ function Preview() {
         // Initialize current image index for this page
         setCurrentImageIndexes(prev => ({
           ...prev,
-          [pageResult.pageNumber - 1]: 0
+          [pageResult.pageNumber - 1]: pageResult.image_idx
         }));
         
         if (progressInterval) {
@@ -95,9 +151,9 @@ function Preview() {
         if (pageResult.next) {
           setCurrentPage(prev => prev + 1);
           setIsLoading(true);
-          if (currentPage > 4) {
-            setLoadingMessage(`Loading page ${currentPage + 1}`);
-          }
+          // if (currentPage > 1) {
+          //   setLoadingMessage(`Loading page ${currentPage + 1}`);
+          // }
         }
       }
     };
@@ -158,7 +214,7 @@ function Preview() {
     }
   }, [handleImageNavigation]);
 
-  if (isLoading && currentPage <= 4 && pageData.length === 0) {
+  if (isLoading && currentPage <= 1 && pageData.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="w-32 h-32 mx-auto mb-6">
@@ -211,7 +267,7 @@ function Preview() {
           {pageData.map((page, pageIndex) => {
             if (!page) return null;
             
-            const images = page.image_urls || [page.image_url]; // Fallback to single image_url if image_urls doesn't exist
+            const images = page.image_urls || []; // Fallback to single image_url if image_urls doesn't exist
             const currentImageIndex = currentImageIndexes[pageIndex] || 0;
 
             return (
@@ -286,7 +342,7 @@ function Preview() {
                 </div>
 
                 <p className="mt-6 text-gray-800 text-lg font-medium text-center px-4">
-                  {page.description || `Page ${pageIndex + 1} content`}
+                  {page.scene || `Page ${pageIndex + 1} content`}
                 </p>
 
                 {/* Swipe instruction for mobile */}
@@ -299,7 +355,7 @@ function Preview() {
             );
           })}
 
-          {isLoading && currentPage > 4 && (
+          {isLoading && currentPage > 1 && (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
               <p className="text-lg text-gray-600">{loadingMessage}</p>
