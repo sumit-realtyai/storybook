@@ -9,7 +9,7 @@ function BookSelection() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            Welcome to Imagitime
+            Welcome to Storybook
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Create personalized storybooks that make your child the star of their own adventure!

@@ -6,6 +6,8 @@ import useChildStore from '../store/childStore';
 import axios from 'axios';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
+const server_url = "https://is510t1jgd.execute-api.ap-south-1.amazonaws.com"
+const loclal_server_url = "http://localhost:5000";
 function Preview() {
   const [searchParams] = useSearchParams();
   
@@ -42,7 +44,7 @@ function Preview() {
     
     const poll = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/photo/check_generation_status`, {
+        const res = await axios.get(`${server_url}/api/photo/check_generation_status`, {
           headers: {
             "ngrok-skip-browser-warning": "true"
           },
@@ -78,7 +80,7 @@ function Preview() {
 
   const fetchPageData = useCallback(async (pageNumber, book_id) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/photo/get_generation_details`, {
+      const response = await axios.get(`${server_url}/api/photo/get_generation_details`, {
         headers: {
           "ngrok-skip-browser-warning": "true"
         },
@@ -170,7 +172,23 @@ function Preview() {
       ...prev,
       [pageIndex]: newIndex
     }));
+
+    updatePageImage(page.req_id, page.job_id, newIndex);
+
   }, [pageData, currentImageIndexes]);
+
+const updatePageImage = async (req_id,job_id, image_id) => {
+  try {
+    await axios.post(`${server_url}/api/photo/update_image`, {
+      req_id,
+      job_id,
+      image_id
+    });
+  } catch (error) {
+    console.error('Error updating page image:', error);
+    
+  }
+}
 
   // Handle touch events for swipe functionality
   const handleTouchStart = useCallback((e, pageIndex) => {

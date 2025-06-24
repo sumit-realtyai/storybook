@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useChildStore from '../store/childStore';
+import axios from 'axios';
+const server_url = "https://is510t1jgd.execute-api.ap-south-1.amazonaws.com";
+const local_server_url = "http://localhost:5000";
 
 function SavePreview() {
   const navigate = useNavigate();
@@ -10,9 +13,36 @@ function SavePreview() {
     name: ''
   });
 
-  const handleSubmit = (e) => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const request_id = queryParams.get('request_id');
+  const kidName = queryParams.get('name') || useChildStore((state) => state.childName);
+  const book_id = queryParams.get('book_id');
+  
+  const sendPreviewLink = async() => {
+    try {
+   await axios.post(`${server_url}/api/photo/send_preview`, {
+        email: formData.email,
+        name: formData.name,
+        req_id: request_id,
+        kidName: kidName,
+        book_id: book_id
+        
+        
+      });
+
+      navigate('/purchase');
+    } catch (error) {
+      console.log('Error sending preview link:', error);
+      // Handle error appropriately, e.g., show a notification or alert
+      
+    }
+  }
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/purchase');
+
+    await sendPreviewLink();
+    
   };
 
   return (

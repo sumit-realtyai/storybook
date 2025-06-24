@@ -83,7 +83,7 @@ function PhotoUpload() {
       // Create query params with all details for preview page
       const previewParams = new URLSearchParams({
         request_id: req_id,
-        book_id: book_id,
+        book_id: "6818cab3bfb946189a94960c", // for now passing constant book_id
         name: childName,
         gender: gender || '',
         age: age || '',
@@ -179,7 +179,7 @@ function PhotoUpload() {
               : 'bg-secondary text-white hover:bg-blue-600'
           }`}
         >
-          {isUploading ? 'Uploading Photos...' : 'Show Book Preview'}
+          {isUploading ? 'Uploading Photos...' : `Show ${childName}'s Book Preview`}
         </button>
 
         <div className="mt-8 text-center">
