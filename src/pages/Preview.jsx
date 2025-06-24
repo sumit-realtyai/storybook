@@ -45,9 +45,6 @@ function Preview() {
     const poll = async () => {
       try {
         const res = await axios.get(`${server_url}/api/photo/check_generation_status`, {
-          headers: {
-            "ngrok-skip-browser-warning": "true"
-          },
           params: { req_id, job_id, page_number, book_id }
         });
 
@@ -81,9 +78,7 @@ function Preview() {
   const fetchPageData = useCallback(async (pageNumber, book_id) => {
     try {
       const response = await axios.get(`${server_url}/api/photo/get_generation_details`, {
-        headers: {
-          "ngrok-skip-browser-warning": "true"
-        },
+        
         params: {
           req_id: request_id,
           book_id,
