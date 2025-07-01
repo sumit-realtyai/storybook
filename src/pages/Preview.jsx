@@ -8,6 +8,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const server_url = "https://is510t1jgd.execute-api.ap-south-1.amazonaws.com"
 const loclal_server_url = "http://localhost:5000";
+
 function Preview() {
   const [searchParams] = useSearchParams();
   
@@ -27,6 +28,12 @@ function Preview() {
   const [hasNextPage, setHasNextPage] = useState(true);
   const [showSaveButton, setShowSaveButton] = useState(false);
   const [currentImageIndexes, setCurrentImageIndexes] = useState({});
+  const [totalPages, setTotalPages] = useState(8); // Assuming 8 total pages
+  const [allPagesLoaded, setAllPagesLoaded] = useState(false);
+
+  // Calculate loading progress based on loaded pages
+  const loadingProgress = Math.min((pageData.filter(page => page).length / totalPages) * 100, 100);
+  const first4PagesLoaded = pageData.filter(page => page).length >= 4;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -78,7 +85,6 @@ function Preview() {
   const fetchPageData = useCallback(async (pageNumber, book_id) => {
     try {
       const response = await axios.get(`${server_url}/api/photo/get_generation_details`, {
-        
         params: {
           req_id: request_id,
           book_id,
@@ -135,6 +141,9 @@ function Preview() {
         if (pageResult.next) {
           setCurrentPage(prev => prev + 1);
           setIsLoading(true);
+        } else {
+          // All pages loaded
+          setAllPagesLoaded(true);
         }
       }
     };
@@ -172,18 +181,17 @@ function Preview() {
 
   }, [pageData, currentImageIndexes]);
 
-const updatePageImage = async (req_id,job_id, image_id) => {
-  try {
-    await axios.post(`${server_url}/api/photo/update_image`, {
-      req_id,
-      job_id,
-      image_id
-    });
-  } catch (error) {
-    console.error('Error updating page image:', error);
-    
+  const updatePageImage = async (req_id, job_id, image_id) => {
+    try {
+      await axios.post(`${server_url}/api/photo/update_image`, {
+        req_id,
+        job_id,
+        image_id
+      });
+    } catch (error) {
+      console.error('Error updating page image:', error);
+    }
   }
-}
 
   // Handle touch events for swipe functionality
   const handleTouchStart = useCallback((e, pageIndex) => {
@@ -210,29 +218,6 @@ const updatePageImage = async (req_id,job_id, image_id) => {
       }
     }
   }, [handleImageNavigation]);
-
-  if (isLoading && currentPage <= 1 && pageData.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <div className="w-32 h-32 mx-auto mb-6">
-          <CircularProgressbar 
-            value={progress} 
-            text={`${Math.round(progress)}%`}
-            styles={{
-              path: { stroke: '#0066FF' },
-              text: { fill: '#0066FF', fontSize: '16px' }
-            }}
-          />
-        </div>
-        <p className="text-4xl text-gray-600">Creating {childName}'s Book...</p>
-        
-        <div className="mt-12 bg-blue-900 rounded-xl p-8 text-white">
-          <p className="italic text-xl mb-4">"This is the best gift one can give to their kids!"</p>
-          <p className="font-semibold">SNJ</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleSavePreview = () => {
     // Create query params with all details for save preview page
@@ -261,6 +246,77 @@ const updatePageImage = async (req_id,job_id, image_id) => {
     return `/upload?${uploadParams.toString()}`;
   };
 
+  const handleEmailPreview = () => {
+    // Navigate to save preview page for email functionality
+    const saveParams = new URLSearchParams({
+      request_id: request_id,
+      book_id: book_id,
+      name: childName,
+      gender: gender || '',
+      age: age || '',
+      birthMonth: birthMonth || ''
+    });
+    
+    return `/save-preview?${saveParams.toString()}`;
+  };
+
+  // Show loading state with progress bar for first 4 pages
+  if (!first4PagesLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="flex-grow flex items-center justify-center px-4">
+          <div className="text-center max-w-md mx-auto">
+            <div className="w-32 h-32 mx-auto mb-8">
+              <CircularProgressbar 
+                value={loadingProgress} 
+                text={`${Math.round(loadingProgress)}%`}
+                styles={{
+                  path: { 
+                    stroke: '#22c55e',
+                    strokeWidth: 8,
+                    transition: 'stroke-dashoffset 0.5s ease 0s'
+                  },
+                  text: { 
+                    fill: '#6b7280', 
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                  },
+                  trail: {
+                    stroke: '#e5e7eb',
+                    strokeWidth: 8
+                  }
+                }}
+              />
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-700 mb-8">
+              Creating {childName}'s Book...
+            </h2>
+            
+            <div className="bg-blue-900 rounded-xl p-6 md:p-8 text-white mb-8">
+              <p className="italic text-lg md:text-xl mb-4">
+                "Amazing, unique product - customer service OUTSTANDING - will now be my go to gift."
+              </p>
+              <p className="font-semibold text-orange-400 text-lg">Ellie</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 md:p-8 shadow-lg border border-gray-200">
+              <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-4">
+                Don't have time to wait?
+              </h3>
+              <Link
+                to={handleEmailPreview()}
+                className="inline-block w-full bg-blue-600 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-blue-700 transition duration-300"
+              >
+                Email Me The Preview Instead
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show pages after first 4 are loaded
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="sticky top-0 bg-gray-50 z-50 shadow-md">
@@ -278,14 +334,14 @@ const updatePageImage = async (req_id,job_id, image_id) => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 pt-6 pb-24">
-        <h1 className="text-5xl font-bold text-center text-blue-900 mb-6">
+        <h1 className="text-4xl md:text-5xl font-bold text-center text-blue-900 mb-6">
           {childName}'s Book Preview
         </h1>
 
         <div className="space-y-12">
           <div className="text-center space-y-2 font-medium text-gray-600">
-            <p className="text-2xl">↓ Pages get shown one below the other</p>
-            <p className="text-2xl">🔄 Swipe left/right to see different images</p>
+            <p className="text-xl md:text-2xl">↓ Pages get shown one below the other</p>
+            <p className="text-xl md:text-2xl">🔄 Swipe left/right to see different images</p>
           </div>
 
           {pageData.map((page, pageIndex) => {
@@ -388,18 +444,33 @@ const updatePageImage = async (req_id,job_id, image_id) => {
         </div>
       </div>
 
-      {(showSaveButton || (!hasNextPage && !isLoading)) && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow-lg transform transition-all duration-300 z-50">
-          <div className="max-w-2xl mx-auto">
+      {/* Bottom action buttons */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow-lg z-50">
+        <div className="max-w-2xl mx-auto">
+          {!allPagesLoaded ? (
+            // Show "Email me the preview instead" while pages are still loading
+            <div className="bg-white rounded-xl p-4 border border-gray-200">
+              <h3 className="text-lg font-bold text-blue-900 mb-3 text-center">
+                Don't have time to wait?
+              </h3>
+              <Link
+                to={handleEmailPreview()}
+                className="block w-full bg-blue-600 text-white text-center py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition duration-300"
+              >
+                Email Me The Preview Instead
+              </Link>
+            </div>
+          ) : (
+            // Show "Save Preview & Show Price" when all pages are loaded
             <Link
               to={handleSavePreview()}
               className="block w-full bg-secondary text-white text-center py-4 rounded-full text-xl font-semibold hover:bg-blue-600 transition duration-300"
             >
               Save Preview & Show Price
             </Link>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
