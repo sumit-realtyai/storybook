@@ -19,6 +19,9 @@ function Preview() {
   const gender = searchParams.get('gender');
   const age = searchParams.get('age');
   const birthMonth = searchParams.get('birthMonth');
+  const page_count = Number(searchParams.get('page_count'));
+  
+
   
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,7 +31,7 @@ function Preview() {
   const [hasNextPage, setHasNextPage] = useState(true);
   const [showSaveButton, setShowSaveButton] = useState(false);
   const [currentImageIndexes, setCurrentImageIndexes] = useState({});
-  const [totalPages, setTotalPages] = useState(8); // Assuming 8 total pages
+  const [totalPages, setTotalPages] = useState(page_count); // Assuming 8 total pages
   const [allPagesLoaded, setAllPagesLoaded] = useState(false);
 
   // Calculate loading progress based on loaded pages
@@ -45,7 +48,7 @@ function Preview() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const pollUntilDone = async (req_id, job_id, page_number, book_id, maxRetries = 15, interval = 30000) => {
+  const pollUntilDone = async (req_id, job_id, page_number, book_id, maxRetries = 100, interval = 10000) => {
     let retries = 0;
     console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
     

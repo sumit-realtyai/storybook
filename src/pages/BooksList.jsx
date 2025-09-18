@@ -1,5 +1,6 @@
 import BookCard from '../components/BookCard';
-
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 const books = [
   {
     id: 1,
@@ -35,8 +36,40 @@ const books = [
     companion: "teddy"
   }
 ];
-
+const server_url = "https://is510t1jgd.execute-api.ap-south-1.amazonaws.com"
 function BooksList() {
+const [books, setBooks] = useState([]);
+const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // make api call to fetch books 
+    getBooks();
+  }, []);
+
+  const getBooks = async() => {
+    // fetch books from api and setBooks
+    setLoading(true);
+    try {
+      const  res = await axios.get(`${server_url}/api/storybook`);
+      setBooks(res.data);
+      setLoading(false);
+    } catch (error) {
+      console.log('Error fetching books:', error);
+      setLoading(false);
+    }
+  }
+
+if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mb-4"></div>
+          <h2 className="text-xl font-semibold text-blue-900">Loading Books...</h2>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6">
       <h1 className="text-5xl font-bold text-center mb-4 text-blue-900">Books for Kids</h1>

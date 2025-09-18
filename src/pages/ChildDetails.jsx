@@ -16,6 +16,8 @@ function ChildDetails() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const book_id = queryParams.get('book_id');
+  const page_count = queryParams.get('page_count');
+  const min_photos = queryParams.get('min_photos');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -27,7 +29,10 @@ function ChildDetails() {
       name: formData.name,
       gender: formData.gender,
       age: formData.age,
-      birthMonth: formData.birthMonth
+      birthMonth: formData.birthMonth,
+      page_count: page_count,
+      min_photos: min_photos
+
     });
     
     navigate(`/upload?${uploadParams.toString()}`);

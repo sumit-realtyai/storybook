@@ -12,6 +12,8 @@ function PhotoUpload() {
   
   // Get all query parameters
   const book_id = queryParams.get('book_id');
+  const page_count = queryParams.get('page_count');
+  const min_photos = queryParams.get('min_photos');
   const childName = queryParams.get('name') || useChildStore((state) => state.childName);
   const gender = queryParams.get('gender');
   const age = queryParams.get('age');
@@ -83,11 +85,13 @@ function PhotoUpload() {
       // Create query params with all details for preview page
       const previewParams = new URLSearchParams({
         request_id: req_id,
-        book_id: "6818cab3bfb946189a94960c", // for now passing constant book_id
+        book_id: book_id, // for now passing constant book_id
         name: childName,
         gender: gender || '',
         age: age || '',
-        birthMonth: birthMonth || ''
+        birthMonth: birthMonth || '',
+        page_count: page_count,
+        min_photos: min_photos
       });
       
       navigate(`/preview?${previewParams.toString()}`);
@@ -141,7 +145,7 @@ function PhotoUpload() {
                 {isDragActive ? "Drop your photos here" : "Drop your photos here"}
               </p>
               <p className="text-sm text-gray-500">or click to select files</p>
-              <p className="text-xs text-gray-400">Minimum 2 photos required</p>
+              <p className="text-xs text-gray-400">Minimum {Number(min_photos)} photos required</p>
             </div>
           </div>
         </div>
