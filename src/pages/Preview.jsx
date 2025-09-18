@@ -7,7 +7,7 @@ import axios from 'axios';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const server_url = "https://is510t1jgd.execute-api.ap-south-1.amazonaws.com"
-const loclal_server_url = "http://localhost:5000";
+const local_server_url = "http://localhost:5000";
 
 function Preview() {
   const [searchParams] = useSearchParams();
@@ -254,7 +254,8 @@ function Preview() {
       name: childName,
       gender: gender || '',
       age: age || '',
-      birthMonth: birthMonth || ''
+      birthMonth: birthMonth || '',
+      notify: true // Indicate this is for email preview
     });
     
     return `/save-preview?${saveParams.toString()}`;

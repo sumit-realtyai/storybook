@@ -18,16 +18,18 @@ function SavePreview() {
   const request_id = queryParams.get('request_id');
   const kidName = queryParams.get('name') || useChildStore((state) => state.childName);
   const book_id = queryParams.get('book_id');
+  const notify = queryParams.get('notify') || false;
   
   const sendPreviewLink = async() => {
     try {
+      
    await axios.post(`${server_url}/api/photo/send_preview`, {
         email: formData.email,
         name: formData.name,
         req_id: request_id,
         kidName: kidName,
-        book_id: book_id
-        
+        book_id: book_id,
+        notify
         
       });
 
@@ -49,7 +51,10 @@ function SavePreview() {
     <div className="max-w-2xl mx-auto mt-10 p-6">
       <div className="bg-white rounded-2xl shadow-xl p-8">
         <h1 className="text-3xl font-bold text-center text-blue-900 mb-2">
-          Email {childName}'s preview link & show price of printed book
+          {
+            notify ? `Where to send the preview link?` : `Email ${childName}'s preview link & show price of printed book`
+          }
+          
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-8">
@@ -86,7 +91,8 @@ function SavePreview() {
             type="submit"
             className="w-full bg-secondary text-white py-4 px-6 rounded-full text-xl font-semibold hover:bg-blue-600 transition duration-300"
           >
-            Save Preview & Show Price
+            {notify? 'send preview notification' : 'Save Preview & Show Price'}
+            
           </button>
         </form>
 
