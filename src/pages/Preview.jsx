@@ -48,7 +48,7 @@ function Preview() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const pollUntilDone = async (req_id, job_id, page_number, book_id, maxRetries = 100, interval = 10000) => {
+  const pollUntilDone = async (req_id, job_id, page_number, book_id, maxRetries = 15, interval = 10000) => {
     let retries = 0;
     console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
     

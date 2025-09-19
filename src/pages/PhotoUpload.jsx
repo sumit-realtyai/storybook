@@ -13,7 +13,7 @@ function PhotoUpload() {
   // Get all query parameters
   const book_id = queryParams.get('book_id');
   const page_count = queryParams.get('page_count');
-  const min_photos = queryParams.get('min_photos');
+  const min_photos = Number(queryParams.get('min_photos')) || 1;
   const childName = queryParams.get('name') || useChildStore((state) => state.childName);
   const gender = queryParams.get('gender');
   const age = queryParams.get('age');
@@ -99,7 +99,7 @@ function PhotoUpload() {
   };
 
   // Check if all photos are successfully uploaded
-  const allPhotosUploaded = uploadedFiles.length >= 2 && 
+  const allPhotosUploaded = uploadedFiles.length >= min_photos && 
                            uploadStatus.length === uploadedFiles.length && 
                            uploadStatus.every(status => status.success) &&
                            !isUploading;

@@ -77,7 +77,7 @@ if (loading) {
 
       <div className="max-w-5xl mx-auto space-y-24">
         {books.map((book) => (
-          <div key={book.id} className="transform hover:scale-105 transition-transform duration-300">
+          <div key={book._id} className="transform hover:scale-105 transition-transform duration-300">
             <BookCard book={book} />
           </div>
         ))}
