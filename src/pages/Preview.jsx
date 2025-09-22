@@ -7,7 +7,7 @@ import axios from 'axios';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const server_url = "https://is510t1jgd.execute-api.ap-south-1.amazonaws.com"
-const local_server_url = "http://localhost:5000";
+const local_server_url = "http://localhost:3000";
 
 function Preview() {
   const [searchParams] = useSearchParams();
@@ -19,7 +19,7 @@ function Preview() {
   const gender = searchParams.get('gender');
   const age = searchParams.get('age');
   const birthMonth = searchParams.get('birthMonth');
-  const page_count = Number(searchParams.get('page_count'));
+  const page_count = Number(searchParams.get('page_count')) || 0;
   
 
   
@@ -36,7 +36,8 @@ function Preview() {
 
   // Calculate loading progress based on loaded pages
   const loadingProgress = Math.min((pageData.filter(page => page).length / totalPages) * 100, 100);
-  const first4PagesLoaded = pageData.filter(page => page).length >= 4;
+  // const first4PagesLoaded = pageData.filter(page => page).length >= 4;
+  const first4PagesLoaded =  Math.floor(page_count/4);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,7 +49,7 @@ function Preview() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const pollUntilDone = async (req_id, job_id, page_number, book_id, maxRetries = 15, interval = 10000) => {
+  const pollUntilDone = async (req_id, job_id, page_number, book_id, maxRetries = 25, interval = 10000) => {
     let retries = 0;
     console.log("Polling started for job_id:", job_id, "with request_id:", req_id);
     
@@ -264,8 +265,8 @@ function Preview() {
     return `/save-preview?${saveParams.toString()}`;
   };
 
-  // Show loading state with progress bar for first 4 pages
-  if (!first4PagesLoaded) {
+  // Show loading state with progress bar until pageDate is greater than first4PagesLoaded
+  if (pageData.length<=first4PagesLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <div className="flex-grow flex items-center justify-center px-4">
