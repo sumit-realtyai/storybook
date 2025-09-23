@@ -4,7 +4,7 @@ import heroImg from "../assets/magic_icon.svg";
 import useChildStore from "../store/childStore";
 import axios from "axios";
 const server_url = "https://is510t1jgd.execute-api.ap-south-1.amazonaws.com";
-const local_server_url = "http://localhost:5000";
+const local_server_url = "http://localhost:3000";
 
 function SavePreview() {
   const navigate = useNavigate();
