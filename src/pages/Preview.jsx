@@ -324,7 +324,7 @@ function Preview() {
   // Show pages after first 4 are loaded
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 bg-gray-50 z-50 shadow-md">
+      {/* <div className="sticky top-0 bg-gray-50 z-50 shadow-md">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">Want to try a different photo?</p>
@@ -336,7 +336,7 @@ function Preview() {
             </Link>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="max-w-2xl mx-auto px-4 pt-6 pb-24">
         <h1 className="text-4xl md:text-5xl font-bold text-center text-blue-900 mb-6">
