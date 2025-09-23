@@ -103,6 +103,10 @@ function Preview() {
       }
       
       const result = await pollUntilDone(request_id, job_id, pageNumber, book_id);
+      if(result.error) {
+        throw new Error("Error during polling for image generation maybe retry limit reached");
+
+      }
       return { ...result, pageNumber }; 
 
     } catch (error) {
